@@ -1,0 +1,37 @@
+name: Upstream Sync
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # 每天 UTC 时间 00:00 (北京时间早上 8 点) 自动运行
+  workflow_dispatch: # 允许你手动点击按钮触发同步
+
+jobs:
+  sync_latest_from_upstream:
+    name: Sync latest commits from upstream repo
+    runs-on: ubuntu-latest
+    if: ${{ github.event.repository.fork }}
+
+    steps:
+      # 第一步：检出你的仓库
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+
+      # 第二步：同步原作者仓库的变化
+      - name: Sync upstream changes
+        id: sync
+        uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
+        with:
+          upstream_sync_repo: Amery2010/peinture  # 原作者的仓库
+          upstream_sync_branch: main
+          target_sync_branch: main
+          target_repo_token: ${{ secrets.GITHUB_TOKEN }} # 自动生成，无需手动设置
+
+      # 第三步：检查同步是否失败
+      - name: Sync check
+        if: failure()
+        run: |
+          echo "[Error] 同步失败，可能是因为原作者修改了工作流文件，你需要手动同步一次。"
+          exit 1
